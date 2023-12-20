@@ -1,4 +1,4 @@
-package main
+package Ticket
 
 type Ticket struct {
 	content string

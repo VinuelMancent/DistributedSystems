@@ -3,7 +3,6 @@ package Middleware
 import (
 	"fmt"
 	"net"
-	"os"
 )
 
 // BroadcastListener repräsentiert einen Broadcast-Listener.
@@ -27,23 +26,58 @@ func NewBroadcastListener(broadcastAddress string, broadcastPort int) (*Broadcas
 }
 
 // Listen lauscht auf eingehende Broadcast-Nachrichten.
-func (bL *BroadcastListener) Listen() {
-	fmt.Println("Multicast-Listener gestartet. Warte auf Nachrichten...")
+func (bL *BroadcastListener) Listen() error {
+	fmt.Println("Broadcast-Listener gestartet. Warte auf Nachrichten...")
 
 	for {
 		buffer := make([]byte, 1024)
 		n, _, err := bL.conn.ReadFromUDP(buffer)
 		if err != nil {
 			fmt.Println("Fehler beim Lesen der Nachricht:", err)
-			os.Exit(1)
+			return err
 		}
 
 		message := string(buffer[:n])
+		if message == "join" {
+			//send message back including all the room information
+		} else if message == "Hello, UDP Broadcast!" {
+			fmt.Println("Joa, das war n Hallo")
+		}
 		fmt.Printf("Empfangene Broadcast-Nachricht: %s\n", message)
+	}
+}
+
+func (bL *BroadcastListener) ListenWithChannel(broadcastChannel chan string) error {
+	fmt.Println("Broadcast-Listener mit channel gestartet. Warte auf Nachrichten...")
+
+	for {
+		buffer := make([]byte, 1024)
+		n, _, err := bL.conn.ReadFromUDP(buffer)
+		if err != nil {
+			fmt.Println("Fehler beim Lesen der Nachricht:", err)
+			return err
+		}
+		message := string(buffer[:n])
+		broadcastChannel <- message
+	}
+}
+
+func (bL *BroadcastListener) ListenToChannelWithExpectedMessage(broadcastChannel chan string, expectedMessage string) error {
+	for {
+		buffer := make([]byte, 1024)
+		n, _, err := bL.conn.ReadFromUDP(buffer)
+		if err != nil {
+			fmt.Println("Fehler beim Lesen der Nachricht:", err)
+			return err
+		}
+		message := string(buffer[:n])
+		if message == expectedMessage {
+			broadcastChannel <- message
+		}
 	}
 }
 
 // Close schließt den Broadcast-Listener.
 func (bL *BroadcastListener) Close() {
-	bL.conn.Close()
+	_ = bL.conn.Close()
 }
